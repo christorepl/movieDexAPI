@@ -4,14 +4,14 @@ const morgan = require('morgan')
 const app = express()
 const cors = require('cors')
 const helmet = require('helmet')
-app.use(morgan('dev'))
+const morganSetting = process.env.NODE_ENV === 'production' ? 'tiny' : 'common'
+app.use(morgan(morganSetting))
 app.use(helmet())
 app.use(cors())
-const PORT = 8000
+const PORT = process.env.PORT || 8000
 const MOVIES = require('./movies-data-small.json')
 
 app.use(function validateBearerToken(req, res, next) {
-    console.log('validation ran')
     const token = req.get('Authorization')
     const apiToken = process.env.API_TOKEN
     if (token.split(' ')[1] !== apiToken){
@@ -37,6 +37,14 @@ function handleGetMovies (req, res) {
     res.status(200).json(response)
 }
 
-app.listen(PORT, () => {
-    console.log('movieDex API listening on 8000')
-})
+app.use((error, req, res, next) => {
+    let response
+    if (process.env.NODE_ENV === 'production') {
+      response = { error: { message: 'server error' }}
+    } else {
+      response = { error }
+    }
+    res.status(500).json(response)
+  })
+
+app.listen(PORT, () => {})
